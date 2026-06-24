@@ -21,7 +21,10 @@
 </head>
 
 <body>
-
+  
+  <!-- Custom Magnetic Cursor -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
   <!-- Navigation -->
   <nav id="navbar" role="navigation" aria-label="Main navigation">
     <div class="nav-container">
@@ -33,6 +36,7 @@
         <li><a href="#credentials" id="nav-certs">Credentials</a></li>
         <li><a href="#contact" id="nav-contact">Contact</a></li>
       </ul>
+      <button id="sound-toggle" class="magnetic-btn" aria-label="Toggle sound">🔊</button>
       <a href="SWE_resume.pdf" download id="resume-download-btn" class="btn-resume" aria-label="Download Resume PDF">
         <span>Resume</span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -51,6 +55,7 @@
   <section id="home" class="hero" aria-labelledby="hero-heading">
     <div class="hero-bg-image" aria-hidden="true"></div>
     <div class="hero-overlay" aria-hidden="true"></div>
+    <div id="hero-3d-canvas" aria-hidden="true"></div>
     <div class="particles" id="particles-container" aria-hidden="true"></div>
     <div class="hero-content">
       <div class="hero-badge" id="hero-badge">
@@ -69,14 +74,14 @@
         decentralized systems, and elegant user experiences.
       </p>
       <div class="hero-actions" id="hero-actions">
-        <a href="#projects" id="view-projects-btn" class="btn-primary">
+        <a href="#projects" id="view-projects-btn" class="btn-primary magnetic-btn">
           View My Work
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="5" y1="12" x2="19" y2="12" />
             <polyline points="12 5 19 12 12 19" />
           </svg>
         </a>
-        <a href="#contact" id="contact-me-btn" class="btn-secondary">Get in Touch</a>
+        <a href="#contact" id="contact-me-btn" class="btn-secondary magnetic-btn">Get in Touch</a>
       </div>
       <div class="hero-socials" id="hero-socials">
         <a href="https://www.linkedin.com/in/prashanth-bala-2ba588219/" target="_blank" rel="noopener"
@@ -124,24 +129,36 @@
       <h2 id="about-heading" class="section-title">Who I Am</h2>
       <div class="about-grid">
         <div class="about-text reveal-left">
-          <p class="about-lead">
-            I'm a <strong>recent MCA graduate</strong> from Chaitanya Bharathi Institute of Technology (CBIT), Hyderabad
-            with a CGPA of <strong>8.70</strong>, passionate about building robust software solutions.
-          </p>
-          <p>
-            My journey spans Full-Stack Web Development, Blockchain Engineering, and Database Security — with hands-on
-            experience building real-world applications that solve real problems.
-          </p>
-          <p>
-            I've solved <strong>180+ DSA &amp; SQL challenges</strong> and consistently rank among top performers in
-            competitive exams like ICET (Rank 1560) and NIMCET (Rank 3000).
-          </p>
-          <div class="about-hobbies">
-            <span class="hobby-tag" id="hobby-coding">⌨️ Coding</span>
-            <span class="hobby-tag" id="hobby-chess">♟️ Chess</span>
-            <span class="hobby-tag" id="hobby-badminton">🏸 Badminton</span>
-            <span class="hobby-tag" id="hobby-anime">🎌 Anime</span>
-            <span class="hobby-tag" id="hobby-tvshows">📺 TV Shows</span>
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="term-btns">
+                <span class="term-btn close"></span>
+                <span class="term-btn min"></span>
+                <span class="term-btn max"></span>
+              </div>
+              <div class="term-title">prashanth@portfolio:~</div>
+            </div>
+            <div class="terminal-body" id="terminal-body">
+              <div class="term-line">
+                <span class="term-prompt">prashanth@portfolio:~$</span>
+                <span class="term-cmd">whoami</span>
+              </div>
+              <div class="term-output">
+                <p>I'm a <strong>recent MCA graduate</strong> from CBIT, Hyderabad with a CGPA of <strong>8.70</strong>.</p>
+                <p>My journey spans Full-Stack Web Development, Blockchain Engineering, and Database Security.</p>
+                <p>I've solved <strong>180+ DSA & SQL challenges</strong> and rank among top performers in competitive exams.</p>
+                <div class="about-hobbies">
+                  <span class="hobby-tag">⌨️ Coding</span>
+                  <span class="hobby-tag">♟️ Chess</span>
+                  <span class="hobby-tag">🏸 Badminton</span>
+                  <span class="hobby-tag">🎌 Anime</span>
+                </div>
+              </div>
+              <div class="term-line" id="term-input-line">
+                <span class="term-prompt">prashanth@portfolio:~$</span>
+                <input type="text" class="term-input" id="term-input" autocomplete="off" spellcheck="false" placeholder="Type 'help' and press Enter...">
+              </div>
+            </div>
           </div>
         </div>
         <div class="about-stats reveal-right">
@@ -293,11 +310,19 @@
   <!-- Projects Section -->
   <section id="projects" class="section section-alt" aria-labelledby="projects-heading">
     <div class="container">
-      <div class="section-label">My Work</div>
+      <div class="section-label">Featured Work</div>
       <h2 id="projects-heading" class="section-title">Projects</h2>
+      
+      <div class="project-filters reveal" id="project-filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="web">Web & Web3</button>
+        <button class="filter-btn" data-filter="db">Databases</button>
+        <button class="filter-btn" data-filter="ai">AI / ML</button>
+      </div>
+
       <div class="projects-grid" id="projects-grid">
 
-        <article class="project-card reveal" id="project-acadvault" aria-label="AcadVault project">
+        <article class="project-card reveal" id="project-acadvault" aria-label="ACADVAULT project" data-category="web">
           <div class="project-header">
             <div class="project-icon">⛓️</div>
             <div class="project-links">
@@ -334,7 +359,7 @@
           </div>
         </article>
 
-        <article class="project-card reveal" id="project-library" aria-label="Library Management System project">
+        <article class="project-card reveal" id="project-lms" aria-label="Library Management System project" data-category="db">
           <div class="project-header">
             <div class="project-icon">📚</div>
             <div class="project-links">
@@ -369,7 +394,7 @@
           </div>
         </article>
 
-        <article class="project-card reveal" id="project-screener" aria-label="Smart Resume Screener project">
+        <article class="project-card reveal" id="project-screener" aria-label="Smart Resume Screener project" data-category="ai">
           <div class="project-header">
             <div class="project-icon">🤖</div>
             <div class="project-links">
@@ -572,6 +597,8 @@
     </div>
   </footer>
 
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="script.js"></script>
 </body>
 

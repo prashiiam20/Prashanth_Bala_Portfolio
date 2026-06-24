@@ -445,32 +445,57 @@
   }, { passive: true });
 })();
 
-// ─── CURSOR GLOW (desktop only) ───────────────────────────────
-(function initCursorGlow() {
+// ─── MAGNETIC CURSOR & BUTTONS ────────────────────────────────
+(function initMagneticCursor() {
   if (window.matchMedia('(pointer: coarse)').matches) return;
 
-  const glow = document.createElement('div');
-  glow.id = 'cursor-glow';
-  document.body.appendChild(glow);
+  const dot = document.getElementById('cursor-dot');
+  const ring = document.getElementById('cursor-ring');
+  if (!dot || !ring) return;
 
-  let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
+  let mouseX = 0, mouseY = 0;
+  let ringX = 0, ringY = 0;
 
   document.addEventListener('mousemove', e => {
     mouseX = e.clientX;
     mouseY = e.clientY;
+    
+    // Dot follows exactly
+    dot.style.left = `${mouseX}px`;
+    dot.style.top = `${mouseY}px`;
   });
 
-  function updateGlow() {
-    glowX += (mouseX - glowX) * 0.08;
-    glowY += (mouseY - glowY) * 0.08;
-    glow.style.left = glowX + 'px';
-    glow.style.top = glowY + 'px';
-    requestAnimationFrame(updateGlow);
+  // Ring follows with a slight delay (lerp)
+  function renderRing() {
+    ringX += (mouseX - ringX) * 0.15;
+    ringY += (mouseY - ringY) * 0.15;
+    ring.style.left = `${ringX}px`;
+    ring.style.top = `${ringY}px`;
+    requestAnimationFrame(renderRing);
   }
-  updateGlow();
+  requestAnimationFrame(renderRing);
 
-  document.addEventListener('mouseleave', () => glow.style.opacity = '0');
-  document.addEventListener('mouseenter', () => glow.style.opacity = '1');
+  // Hover states for links and buttons
+  const interactables = document.querySelectorAll('a, button, input, .project-card, .term-btn');
+  interactables.forEach(el => {
+    el.addEventListener('mouseenter', () => ring.classList.add('cursor-hover'));
+    el.addEventListener('mouseleave', () => ring.classList.remove('cursor-hover'));
+  });
+
+  // Magnetic Pull for .magnetic-btn
+  const magnetBtns = document.querySelectorAll('.magnetic-btn');
+  magnetBtns.forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width / 2;
+      const y = e.clientY - rect.top - rect.height / 2;
+      // Pull button towards cursor
+      btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.transform = 'translate(0px, 0px)';
+    });
+  });
 })();
 
 // ─── PROJECT CARD TILT ───────────────────────────────────────
@@ -513,3 +538,224 @@
 
 console.log('%c// Prashanth Bala — Portfolio', 'color: #ff8566; font-family: JetBrains Mono, monospace; font-size: 14px; font-weight: bold;');
 console.log('%c// Full-Stack • Blockchain • MCA @ CBIT', 'color: #8e8e9a; font-family: JetBrains Mono, monospace; font-size: 12px;');
+
+// ─── PROJECT FILTERING (VIEW TRANSITIONS API) ─────────────────
+(function initProjectFilters() {
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const cards = document.querySelectorAll('.project-card');
+  if (!filterBtns.length || !cards.length) return;
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active class
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const filterValue = btn.getAttribute('data-filter');
+
+      // Update DOM inside startViewTransition for smooth morphing
+      if (document.startViewTransition) {
+        document.startViewTransition(() => updateCards(filterValue));
+      } else {
+        updateCards(filterValue);
+      }
+    });
+  });
+
+  function updateCards(filter) {
+    cards.forEach(card => {
+      const category = card.getAttribute('data-category');
+      if (filter === 'all' || category === filter) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+})();
+
+// ─── INTERACTIVE TERMINAL ─────────────────────────────────────
+(function initTerminal() {
+  const input = document.getElementById('term-input');
+  const outputArea = document.querySelector('.term-output');
+  if (!input || !outputArea) return;
+
+  const commands = {
+    'help': `<p>Available commands: <br>
+      <span class="term-cmd">whoami</span> - Display quick bio<br>
+      <span class="term-cmd">skills</span> - List primary skills<br>
+      <span class="term-cmd">clear</span> - Clear the terminal output</p>`,
+    'whoami': `<p>I'm a <strong>recent MCA graduate</strong> from CBIT, Hyderabad with a CGPA of <strong>8.70</strong>.</p>
+               <p>My journey spans Full-Stack Web Development, Blockchain Engineering, and Database Security.</p>`,
+    'skills': `<p><strong>Core:</strong> Python, Java, JavaScript, React.js, Node.js, SQL</p>
+               <p><strong>DB & Security:</strong> PostgreSQL, MySQL, RBAC, Stored Procedures</p>`,
+    'clear': ''
+  };
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const val = input.value.trim().toLowerCase();
+      if (!val) return;
+
+      if (val === 'clear') {
+        outputArea.innerHTML = '';
+      } else {
+        // Echo command
+        const echo = document.createElement('div');
+        echo.className = 'term-line';
+        echo.innerHTML = `<span class="term-prompt">prashanth@portfolio:~$</span><span class="term-cmd">${val}</span>`;
+        outputArea.appendChild(echo);
+
+        // Echo response
+        const response = document.createElement('div');
+        response.innerHTML = commands[val] || `<p>Command not found: ${val}. Type 'help' for a list of commands.</p>`;
+        outputArea.appendChild(response);
+      }
+      
+      input.value = '';
+      const body = document.getElementById('terminal-body');
+      body.scrollTop = body.scrollHeight; // Auto-scroll
+      if (window.playClickSound) window.playClickSound();
+    }
+  });
+})();
+
+// ─── HIGH-TECH SYNTHESIZED SOUNDS ─────────────────────────────
+(function initSounds() {
+  const toggleBtn = document.getElementById('sound-toggle');
+  if (!toggleBtn) return;
+
+  let audioCtx = null;
+  let soundEnabled = false;
+
+  toggleBtn.addEventListener('click', () => {
+    soundEnabled = !soundEnabled;
+    toggleBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    
+    // Initialize AudioContext on first user gesture
+    if (soundEnabled && !audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (soundEnabled && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  });
+
+  // Short, muted sine wave for hovering
+  window.playHoverSound = function() {
+    if (!soundEnabled || !audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.05);
+    
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.02, audioCtx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.1);
+  };
+
+  // Sharp, high-pitched pop for clicking
+  window.playClickSound = function() {
+    if (!soundEnabled || !audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+    
+    gain.gain.setValueAtTime(0, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.05);
+  };
+
+  // Attach to UI
+  document.querySelectorAll('a, button, .filter-btn').forEach(el => {
+    el.addEventListener('mouseenter', () => window.playHoverSound());
+    el.addEventListener('click', () => window.playClickSound());
+  });
+})();
+
+// ─── INTERACTIVE 3D HERO (THREE.JS) ───────────────────────────
+(function initThreeJSHero() {
+  if (typeof THREE === 'undefined') return;
+  const container = document.getElementById('hero-3d-canvas');
+  if (!container) return;
+
+  const scene = new THREE.Scene();
+  // Adjust camera to fit the right side of the hero
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 5;
+
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  // Create a high-tech glowing wireframe sphere (represents a node/globe)
+  const geometry = new THREE.IcosahedronGeometry(2, 2);
+  const material = new THREE.MeshBasicMaterial({ 
+    color: 0xff8566, // Peach accent
+    wireframe: true,
+    transparent: true,
+    opacity: 0.15
+  });
+  
+  const sphere = new THREE.Mesh(geometry, material);
+  scene.add(sphere);
+
+  // Position it slightly to the right so it doesn't block text
+  sphere.position.x = window.innerWidth > 768 ? 2 : 0;
+  sphere.position.y = window.innerWidth > 768 ? 0 : 1;
+
+  // Track mouse for 3D parallax
+  let mouseX = 0;
+  let mouseY = 0;
+  let targetX = 0;
+  let targetY = 0;
+  const windowHalfX = window.innerWidth / 2;
+  const windowHalfY = window.innerHeight / 2;
+
+  document.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX - windowHalfX);
+    mouseY = (e.clientY - windowHalfY);
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    targetX = mouseX * 0.001;
+    targetY = mouseY * 0.001;
+
+    // Smoothly interpolate rotation towards target
+    sphere.rotation.y += 0.005 + (targetX - sphere.rotation.y) * 0.05;
+    sphere.rotation.x += 0.002 + (targetY - sphere.rotation.x) * 0.05;
+
+    renderer.render(scene, camera);
+  }
+  
+  animate();
+
+  // Handle Resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    sphere.position.x = window.innerWidth > 768 ? 2 : 0;
+    sphere.position.y = window.innerWidth > 768 ? 0 : 1;
+  });
+})();
