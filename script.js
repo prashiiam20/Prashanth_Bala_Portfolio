@@ -1,4 +1,166 @@
 /* ============================================================
+   HIGH-LEVEL SCROLL ANIMATIONS — injected first
+   ============================================================ */
+
+// ─── 1. SCROLL PROGRESS BAR ───────────────────────────────────
+(function initScrollProgress() {
+  const bar = document.createElement('div');
+  bar.id = 'scroll-progress-bar';
+  document.body.prepend(bar);
+
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = `${(scrollTop / docHeight) * 100}%`;
+  }, { passive: true });
+})();
+
+// ─── 2. SIDE SCROLL SPY DOTS ──────────────────────────────────
+(function initScrollSpy() {
+  const sections = Array.from(document.querySelectorAll('section[id]'));
+  if (!sections.length) return;
+
+  const spy = document.createElement('nav');
+  spy.id = 'scroll-spy';
+  spy.setAttribute('aria-label', 'Page sections');
+
+  const dots = sections.map(section => {
+    const dot = document.createElement('a');
+    dot.classList.add('spy-dot');
+    dot.href = `#${section.id}`;
+    dot.setAttribute('data-label', section.querySelector('h2')?.textContent.trim() || section.id);
+    dot.setAttribute('aria-label', section.id);
+    dot.addEventListener('click', e => {
+      e.preventDefault();
+      section.scrollIntoView({ behavior: 'smooth' });
+    });
+    spy.appendChild(dot);
+    return { dot, section };
+  });
+
+  document.body.appendChild(spy);
+
+  const spyObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      const match = dots.find(d => d.section === entry.target);
+      if (match) match.dot.classList.toggle('active', entry.isIntersecting);
+    });
+  }, { threshold: 0.4 });
+
+  sections.forEach(s => spyObserver.observe(s));
+})();
+
+// ─── 3. SECTION IN-VIEW (glow separator + label) ──────────────
+(function initSectionInView() {
+  const sections = document.querySelectorAll('.section');
+  const labels = document.querySelectorAll('.section-label');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  sections.forEach(s => obs.observe(s));
+
+  const labelObs = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('label-visible');
+        labelObs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.8 });
+
+  labels.forEach(l => labelObs.observe(l));
+})();
+
+// ─── 4. SPLIT-WORD SECTION TITLE ANIMATION ────────────────────
+(function initSplitTitles() {
+  const titles = document.querySelectorAll('.section-title');
+
+  titles.forEach(title => {
+    const words = title.textContent.trim().split(' ');
+    title.textContent = '';
+    title.style.overflow = 'visible';
+
+    words.forEach((word, i) => {
+      const wrapper = document.createElement('span');
+      wrapper.classList.add('split-word');
+
+      const inner = document.createElement('span');
+      inner.classList.add('split-word-inner');
+      inner.textContent = word;
+      inner.style.transitionDelay = `${i * 120}ms`;
+
+      wrapper.appendChild(inner);
+      title.appendChild(wrapper);
+
+      if (i < words.length - 1) {
+        title.appendChild(document.createTextNode('\u00a0'));
+      }
+    });
+
+    const titleObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          title.querySelectorAll('.split-word-inner').forEach(inner => {
+            inner.classList.add('word-visible');
+          });
+          titleObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.6 });
+
+    titleObs.observe(title);
+  });
+})();
+
+// ─── 5. PARALLAX HERO ─────────────────────────────────────────
+(function initParallax() {
+  const hero = document.querySelector('.hero-content');
+  const heroBadge = document.querySelector('.hero-badge');
+  if (!hero || window.matchMedia('(pointer: coarse)').matches) return;
+
+  let lastY = 0;
+  window.addEventListener('scroll', () => {
+    lastY = window.scrollY;
+    requestAnimationFrame(() => {
+      hero.style.transform = `translateY(${lastY * 0.15}px)`;
+      if (heroBadge) heroBadge.style.transform = `translateY(${lastY * 0.08}px)`;
+    });
+  }, { passive: true });
+})();
+
+// ─── 6. STAGGERED GRID CARD WIPE-IN ───────────────────────────
+(function initStaggeredGrids() {
+  const grids = document.querySelectorAll('#skills-grid, #projects-grid, #certs-grid, #achievements-grid, .contact-links-wrap');
+
+  grids.forEach(grid => {
+    const items = Array.from(grid.children);
+    items.forEach((item, i) => {
+      item.classList.add('stagger-item');
+      item.style.transitionDelay = `${i * 90}ms`;
+    });
+
+    const gridObs = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.querySelectorAll('.stagger-item').forEach(item => {
+            item.classList.add('stagger-visible');
+          });
+          gridObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08 });
+
+    gridObs.observe(grid);
+  });
+})();
+
+/* ============================================================
    PRASHANTH BALA PORTFOLIO — JavaScript
    Matrix Rain | Particles | Typewriter | Reveal | Cards
    ============================================================ */
