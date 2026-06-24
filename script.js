@@ -1,9 +1,63 @@
 /* ============================================================
    PRASHANTH BALA PORTFOLIO — JavaScript
-   Typewriter | Scroll Reveal | Particles | Nav | Counters
+   Matrix Rain | Particles | Typewriter | Reveal | Cards
    ============================================================ */
 
 'use strict';
+
+// ─── MATRIX RAIN EFFECT ───────────────────────────────────────
+(function initMatrixRain() {
+  const canvas = document.createElement('canvas');
+  canvas.id = 'matrix-canvas';
+  const hero = document.querySelector('.hero');
+  if (!hero) return;
+  hero.insertBefore(canvas, hero.firstChild);
+
+  const ctx = canvas.getContext('2d');
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*><{}[]ΩΨΦΛΔπ∑∫≠≤≥±∞';
+  const fontSize = 13;
+  let columns, drops;
+
+  function resize() {
+    canvas.width = hero.offsetWidth;
+    canvas.height = hero.offsetHeight;
+    columns = Math.floor(canvas.width / fontSize);
+    drops = new Array(columns).fill(1);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+
+  function draw() {
+    ctx.fillStyle = 'rgba(10, 10, 15, 0.04)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `${fontSize}px JetBrains Mono, monospace`;
+
+    for (let i = 0; i < columns; i++) {
+      const char = chars[Math.floor(Math.random() * chars.length)];
+      const x = i * fontSize;
+      const y = drops[i] * fontSize;
+
+      // Lead character is brighter
+      const alpha = Math.random() > 0.95 ? 1 : Math.random() * 0.4 + 0.1;
+      ctx.fillStyle = `rgba(255, 133, 102, ${alpha})`;
+      ctx.fillText(char, x, y);
+
+      if (y > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  const interval = setInterval(draw, 60);
+
+  // Stop animation when hero is out of view
+  const heroObserver = new IntersectionObserver(entries => {
+    if (!entries[0].isIntersecting) clearInterval(interval);
+  });
+  heroObserver.observe(hero);
+})();
 
 // ─── TYPEWRITER EFFECT ───────────────────────────────────────
 (function initTypewriter() {
@@ -21,29 +75,20 @@
   let phraseIndex = 0;
   let charIndex = 0;
   let isDeleting = false;
-  let isPaused = false;
 
   function type() {
     const current = phrases[phraseIndex];
-
-    if (isDeleting) {
-      charIndex--;
-    } else {
-      charIndex++;
-    }
-
+    if (isDeleting) charIndex--;
+    else charIndex++;
     el.textContent = current.substring(0, charIndex);
 
-    let delay = isDeleting ? 55 : 90;
+    let delay = isDeleting ? 50 : 85;
 
     if (!isDeleting && charIndex === current.length) {
-      delay = 2000;
-      isPaused = true;
       setTimeout(() => {
         isDeleting = true;
-        isPaused = false;
         setTimeout(type, 55);
-      }, delay);
+      }, 2000);
       return;
     }
 
@@ -56,48 +101,34 @@
     setTimeout(type, delay);
   }
 
-  setTimeout(type, 1200);
+  setTimeout(type, 1000);
 })();
 
-// ─── PARTICLE SYSTEM ────────────────────────────────────────
+// ─── ENHANCED PARTICLE SYSTEM ────────────────────────────────
 (function initParticles() {
   const container = document.getElementById('particles-container');
   if (!container) return;
 
-  const colors = [
-    'rgba(255, 133, 102, 0.3)',
-    'rgba(43, 43, 43, 0.2)',
-    'rgba(100, 116, 139, 0.3)'
-  ];
-
-  const PARTICLE_COUNT = 20;
+  const PARTICLE_COUNT = 25;
 
   for (let i = 0; i < PARTICLE_COUNT; i++) {
-    createParticle(container, colors, i * (6000 / PARTICLE_COUNT));
-  }
-
-  function createParticle(parent, colorList, delay) {
     const p = document.createElement('div');
     p.classList.add('particle');
-    const size = Math.random() * 4 + 2;
+    const size = Math.random() * 3 + 1.5;
     const leftPct = Math.random() * 100;
-    const duration = Math.random() * 12 + 10;
-    const color = colorList[Math.floor(Math.random() * colorList.length)];
+    const duration = Math.random() * 15 + 12;
 
     p.style.cssText = `
       width: ${size}px;
       height: ${size}px;
       left: ${leftPct}%;
-      background: ${color};
       animation-duration: ${duration}s;
-      animation-delay: ${delay}ms;
-      box-shadow: 0 0 ${size * 2}px ${color};
+      animation-delay: ${i * (duration * 1000 / PARTICLE_COUNT)}ms;
     `;
-    parent.appendChild(p);
+    container.appendChild(p);
 
     p.addEventListener('animationend', () => {
       p.style.left = `${Math.random() * 100}%`;
-      p.style.animationDuration = `${Math.random() * 12 + 10}s`;
       p.style.animationDelay = '0ms';
     });
   }
@@ -108,13 +139,9 @@
   const navbar = document.getElementById('navbar');
   if (!navbar) return;
 
-  function onScroll() {
-    if (window.scrollY > 40) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
-    }
-  }
+  const onScroll = () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 40);
+  };
 
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
@@ -131,7 +158,6 @@
     btn.setAttribute('aria-expanded', String(isOpen));
   });
 
-  // Close on link click
   links.querySelectorAll('a').forEach(a => {
     a.addEventListener('click', () => {
       links.classList.remove('open');
@@ -144,17 +170,11 @@
 (function initScrollReveal() {
   const selectors = ['.reveal', '.reveal-left', '.reveal-right'];
   const elements = document.querySelectorAll(selectors.join(', '));
-
   if (!elements.length) return;
 
-  // Stagger delay for grouped elements
   const staggerParents = [
-    '#skills-grid',
-    '#projects-grid',
-    '#certs-grid',
-    '#achievements-grid',
-    '#education-timeline',
-    '.contact-links-wrap'
+    '#skills-grid', '#projects-grid', '#certs-grid',
+    '#achievements-grid', '#education-timeline', '.contact-links-wrap'
   ];
 
   staggerParents.forEach(sel => {
@@ -173,11 +193,10 @@
         observer.unobserve(entry.target);
       }
     });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
 
   elements.forEach(el => observer.observe(el));
 
-  // Also observe timeline items
   document.querySelectorAll('.timeline-item').forEach(item => {
     item.classList.add('reveal');
     observer.observe(item);
@@ -192,10 +211,8 @@
   cards.forEach(card => {
     card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      card.style.setProperty('--mouse-x', `${x}px`);
-      card.style.setProperty('--mouse-y', `${y}px`);
+      card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+      card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
     });
   });
 })();
@@ -221,9 +238,7 @@
       const startTime = performance.now();
 
       function animate(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        // Ease out cubic
+        const progress = Math.min((now - startTime) / duration, 1);
         const eased = 1 - Math.pow(1 - progress, 3);
         const current = target * eased;
         el.textContent = (isDecimal ? current.toFixed(2) : Math.floor(current)) + (hasPlus ? '+' : '');
@@ -238,7 +253,7 @@
   statCards.forEach(card => observer.observe(card));
 })();
 
-// ─── SMOOTH ACTIVE NAV HIGHLIGHTING ──────────────────────────
+// ─── ACTIVE NAV HIGHLIGHT ────────────────────────────────────
 (function initActiveNav() {
   const sections = document.querySelectorAll('section[id]');
   const navLinks = document.querySelectorAll('.nav-links a');
@@ -249,12 +264,7 @@
       if (!entry.isIntersecting) return;
       const id = entry.target.id;
       navLinks.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href === `#${id}`) {
-          link.style.color = 'var(--color-accent)';
-        } else {
-          link.style.color = '';
-        }
+        link.style.color = link.getAttribute('href') === `#${id}` ? 'var(--color-accent)' : '';
       });
     });
   }, { threshold: 0.4 });
@@ -268,63 +278,37 @@
   if (!indicator) return;
 
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 80) {
-      indicator.style.opacity = '0';
-      indicator.style.pointerEvents = 'none';
-    } else {
-      indicator.style.opacity = '1';
-      indicator.style.pointerEvents = 'auto';
-    }
+    indicator.style.opacity = window.scrollY > 80 ? '0' : '1';
+    indicator.style.pointerEvents = window.scrollY > 80 ? 'none' : 'auto';
   }, { passive: true });
 })();
 
-// ─── CURSOR GLOW EFFECT (desktop only) ───────────────────────
+// ─── CURSOR GLOW (desktop only) ───────────────────────────────
 (function initCursorGlow() {
   if (window.matchMedia('(pointer: coarse)').matches) return;
 
   const glow = document.createElement('div');
-  glow.style.cssText = `
-    position: fixed;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,133,102,0.04) 0%, transparent 70%);
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: opacity 0.3s;
-    will-change: transform;
-  `;
+  glow.id = 'cursor-glow';
   document.body.appendChild(glow);
 
-  let mouseX = 0, mouseY = 0;
-  let glowX = 0, glowY = 0;
-  let rafId = null;
+  let mouseX = 0, mouseY = 0, glowX = 0, glowY = 0;
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('mousemove', e => {
     mouseX = e.clientX;
     mouseY = e.clientY;
-
-    if (!rafId) {
-      rafId = requestAnimationFrame(updateGlow);
-    }
   });
 
   function updateGlow() {
-    glowX += (mouseX - glowX) * 0.1;
-    glowY += (mouseY - glowY) * 0.1;
+    glowX += (mouseX - glowX) * 0.08;
+    glowY += (mouseY - glowY) * 0.08;
     glow.style.left = glowX + 'px';
     glow.style.top = glowY + 'px';
-    rafId = requestAnimationFrame(updateGlow);
+    requestAnimationFrame(updateGlow);
   }
+  updateGlow();
 
-  document.addEventListener('mouseleave', () => {
-    glow.style.opacity = '0';
-  });
-
-  document.addEventListener('mouseenter', () => {
-    glow.style.opacity = '1';
-  });
+  document.addEventListener('mouseleave', () => glow.style.opacity = '0');
+  document.addEventListener('mouseenter', () => glow.style.opacity = '1');
 })();
 
 // ─── PROJECT CARD TILT ───────────────────────────────────────
@@ -332,21 +316,38 @@
   if (window.matchMedia('(pointer: coarse)').matches) return;
 
   document.querySelectorAll('.project-card').forEach(card => {
-    card.addEventListener('mousemove', (e) => {
+    card.addEventListener('mousemove', e => {
       const rect = card.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const cx = rect.width / 2;
       const cy = rect.height / 2;
-      const tiltX = ((y - cy) / cy) * 6;
-      const tiltY = ((cx - x) / cx) * 6;
-      card.style.transform = `translateY(-8px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      const tiltX = ((y - cy) / cy) * 5;
+      const tiltY = ((cx - x) / cx) * 5;
+      card.style.transform = `translateY(-6px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      card.style.transition = 'transform 0.1s ease';
     });
 
     card.addEventListener('mouseleave', () => {
       card.style.transform = '';
+      card.style.transition = 'var(--transition)';
     });
   });
 })();
 
-console.log('%c👋 Hey there, developer! Prashanth Bala\'s portfolio is open source!', 'color: #ff8566; font-size: 14px; font-weight: bold; padding: 8px 0;');
+// ─── ANIMATE SECTION BORDERS ─────────────────────────────────
+(function initSectionGlow() {
+  // Add a subtle glowing line at the top of each section on scroll-in
+  const sections = document.querySelectorAll('.section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.setProperty('--section-visible', '1');
+      }
+    });
+  }, { threshold: 0.1 });
+  sections.forEach(s => observer.observe(s));
+})();
+
+console.log('%c// Prashanth Bala — Portfolio', 'color: #ff8566; font-family: JetBrains Mono, monospace; font-size: 14px; font-weight: bold;');
+console.log('%c// Full-Stack • Blockchain • MCA @ CBIT', 'color: #8e8e9a; font-family: JetBrains Mono, monospace; font-size: 12px;');
